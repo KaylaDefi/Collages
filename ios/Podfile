@@ -23,6 +23,10 @@ target 'MusaFeatures' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  pod 'RNScreens', :path => '../node_modules/react-native-screens'
+  pod 'RNGestureHandler', :path => '../node_modules/react-native-gesture-handler'
+
+
   target 'MusaFeaturesTests' do
     inherit! :complete
     # Pods for testing

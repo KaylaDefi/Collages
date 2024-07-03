@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, Dimensions, Animated } from 'react-native';
 import Video from 'react-native-video';
 
@@ -17,12 +17,14 @@ interface DynamicCollageProps {
 const screenWidth = Dimensions.get('window').width;
 
 const DynamicCollage: React.FC<DynamicCollageProps> = ({ images, matrix, direction, currentIndex }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [activeIndex, setActiveIndex] = useState(currentIndex);
 
   useEffect(() => {
+    setActiveIndex(currentIndex);
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 1000,
+      duration: 500,
       useNativeDriver: true,
     }).start();
   }, [currentIndex]);
@@ -43,7 +45,6 @@ const DynamicCollage: React.FC<DynamicCollageProps> = ({ images, matrix, directi
               style={styles.media}
               resizeMode="cover"
               repeat
-              paused={false}
             />
           )}
         </View>

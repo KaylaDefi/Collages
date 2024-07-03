@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Button } from 'react-native';
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, Button, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import CollagePicker from './src/components/CollagePicker';
-import DynamicCollage from './src/components/DynamicCollage';
 import GridLayoutPicker from './src/components/GridLayoutPicker';
+import DynamicCollage from './src/components/DynamicCollage';
+import DisplayScreen from './src/components/DisplayScreen';
 import { LayoutData } from './src/components/LayoutData';
 
 interface MediaItem {
@@ -10,53 +13,51 @@ interface MediaItem {
   type: string;
 }
 
-const App: React.FC = () => {
+type RootStackParamList = {
+  Home: undefined;
+  Display: { media: MediaItem[]; layout: { direction: 'row' | 'column'; matrix: number[] } };
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
+
+const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [layout, setLayout] = useState(LayoutData[4][0]); // Default to 4 image layout
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMediaPicked = (pickedMedia: MediaItem[]) => {
-    setMedia((prevMedia) => [...prevMedia, ...pickedMedia]);
+    setMedia(pickedMedia);
   };
 
   const handleLayoutSelected = (selectedLayout: { direction: 'row' | 'column'; matrix: number[] }) => {
     setLayout(selectedLayout);
   };
 
-  const startSlideshow = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    intervalRef.current = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % media.length);
-    }, 3000); // Change image/video every 3 seconds
+  const goToDisplayMode = () => {
+    navigation.navigate('Display', { media, layout });
   };
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Restart slideshow when media is added or removed
-    startSlideshow();
-  }, [media]);
 
   return (
     <SafeAreaView style={styles.container}>
       <CollagePicker onMediaPicked={handleMediaPicked} />
       <GridLayoutPicker onLayoutSelected={handleLayoutSelected} />
-      <Button title="Start Slideshow" onPress={startSlideshow} />
       {media.length > 0 && (
-        <DynamicCollage
-          images={media}
-          matrix={layout.matrix}
-          direction={layout.direction}
-          currentIndex={currentIndex}
-        />
+        <View style={styles.previewContainer}>
+          <DynamicCollage images={media} matrix={layout.matrix} direction={layout.direction} currentIndex={0} />
+        </View>
       )}
+      <Button title="Go to Display Mode" onPress={goToDisplayMode} />
     </SafeAreaView>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Collage Picker' }} />
+        <Stack.Screen name="Display" component={DisplayScreen} options={{ title: 'Display Mode' }} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
@@ -64,6 +65,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  previewContainer: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    margin: 10,
   },
 });
 

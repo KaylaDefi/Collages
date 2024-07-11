@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import { View, Image, StyleSheet, Dimensions, Animated } from 'react-native';
-import Video from 'react-native-video';
+import Video, { VideoRef } from 'react-native-video';
 
 interface MediaItem {
   uri: string;
@@ -12,11 +12,29 @@ interface DynamicCollageProps {
   matrix: number[];
   direction: 'row' | 'column';
   currentIndex: number;
+  onVideoEnd: () => void;
+  videoRef: React.RefObject<VideoRef>;
 }
 
 const screenWidth = Dimensions.get('window').width;
 
-const DynamicCollage: React.FC<DynamicCollageProps> = ({ images, matrix, direction, currentIndex }) => {
+const MediaItemComponent = memo(({ item, onVideoEnd, videoRef }: { item: MediaItem, onVideoEnd: () => void, videoRef: React.RefObject<VideoRef> }) => {
+  if (!item) return null;
+  return item.type.startsWith('image') ? (
+    <Image source={{ uri: item.uri }} style={styles.media} />
+  ) : (
+    <Video
+      source={{ uri: item.uri }}
+      style={styles.media}
+      resizeMode="cover"
+      repeat={false}
+      onEnd={onVideoEnd}
+      ref={videoRef}
+    />
+  );
+});
+
+const DynamicCollage: React.FC<DynamicCollageProps> = ({ images, matrix, direction, currentIndex, onVideoEnd, videoRef }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [activeIndex, setActiveIndex] = useState(currentIndex);
 
@@ -37,16 +55,7 @@ const DynamicCollage: React.FC<DynamicCollageProps> = ({ images, matrix, directi
       const startIndex = m ? array.slice(0, m).reduce(reducer) : 0;
       const mediaElements = images.slice(startIndex, startIndex + element).map((item, i) => (
         <View key={`${m}-${i}`} style={styles.mediaContainer}>
-          {item.type.startsWith('image') ? (
-            <Image source={{ uri: item.uri }} style={styles.media} />
-          ) : (
-            <Video
-              source={{ uri: item.uri }}
-              style={styles.media}
-              resizeMode="cover"
-              repeat
-            />
-          )}
+          <MediaItemComponent item={item} onVideoEnd={onVideoEnd} videoRef={videoRef} />
         </View>
       ));
 
@@ -76,7 +85,7 @@ const styles = StyleSheet.create({
   },
   mediaContainer: {
     flex: 1,
-    margin: 2, // Adds spacing between media items
+    margin: 2,
   },
   media: {
     width: '100%',
@@ -84,4 +93,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DynamicCollage;
+export default memo(DynamicCollage);
